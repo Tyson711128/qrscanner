@@ -8,20 +8,23 @@
   <style>
     body { font-family: sans-serif; margin: 0; padding: 10px; }
 
-    /* カメラ表示枠を正方形ベースにして中央固定 */
+    /* カメラ枠を固定し、video を中央寄せ（クロップ禁止） */
     .scanner {
       width: 100%;
-      height: 240px;     /* ← カメラ高さ（調整してOK） */
+      height: 260px;        /* ← 高さ調整 */
       margin-bottom: 10px;
       overflow: hidden;
+      background: #000;
       position: relative;
     }
 
-    /* iPhoneのvideoズレ防止（最重要） */
+    /* video を中央に配置し、width優先で縮小 */
     .scanner video {
-      object-fit: cover !important;
       width: 100% !important;
-      height: 100% !important;
+      height: auto !important;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
     }
 
     .grid {
@@ -41,7 +44,6 @@
     }
     .submitted { background: #c8ffcc !important; }
 
-    /* フラッシュ演出 */
     #flash {
       position: fixed;
       top: 0; left: 0;
@@ -86,12 +88,11 @@
 <h3>提出状況</h3>
 <div id="numberGrid" class="grid"></div>
 
-<div class="version">ver.1.4.0</div>
+<div class="version">ver.1.4.1</div>
 
 <script>
-  /* ---- 音（許可されている環境のみ鳴る） ---- */
   const beep = new Audio(
-    "data:audio/mp3;base64,SUQzAwAAAAAAF1RTU0UAAAAPAAADTGF2ZjU2LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADBwsOAkB0ABAIe3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e/8A"
+  "data:audio/mp3;base64,SUQzAwAAAAAAF1RTU0UAAAAPAAADTGF2ZjU2LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADBwsOAkB0ABAIe3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e/8A"
   );
 
   function playBeep() {
@@ -99,34 +100,30 @@
     beep.play().catch(()=>{});
   }
 
-  /* ---- フラッシュ ---- */
   function flash() {
     const f = document.getElementById("flash");
     f.style.opacity = 0.8;
     setTimeout(()=> f.style.opacity = 0, 120);
   }
 
-  /* ---- 最重要：音アンロック → カメラ起動 ---- */
   async function startApp() {
     try {
-      await beep.play().catch(()=>{}); // iOS用アンロック
+      await beep.play().catch(()=>{});
       beep.pause();
       beep.currentTime = 0;
 
       document.getElementById("startBtn").style.display = "none";
-      document.getElementById("reader").style.display = "block";
 
       qr.start(
         { facingMode: "environment" },
         {
           fps: 10,
-          qrbox: { width: 180, height: 180 },  // ★ QRガイドの比率を固定（中央）
-          aspectRatio: 1.3333                      // ★ iPhoneのズレ完全防止
+          qrbox: { width: 200, height: 200 },   /* 読み取りエリア */
         },
         onScanSuccess
       );
     } catch (e) {
-      alert("開始に失敗しました");
+      alert("開始に失敗");
       console.log(e);
     }
   }
@@ -158,13 +155,11 @@
 
   function onScanSuccess(text) {
     const num = Number(text);
-
     if (num >= 1 && num <= MAX_NUM) {
       if (!submitted.has(num)) {
-        flash();   // 💥 フラッシュ（iOSも100%）
-        playBeep(); // 🔊 音（使える環境のみ）
+        flash();
+        playBeep();
       }
-
       submitted.add(num);
       const c = document.getElementById("num_" + num);
       if (c) c.classList.add("submitted");

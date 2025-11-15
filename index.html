@@ -34,6 +34,12 @@
       font-size: 18px;
       padding: 8px 12px;
     }
+    .version {
+      margin-top: 30px;
+      text-align: center;
+      color: #777;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -52,15 +58,17 @@
 <h3>提出状況</h3>
 <div id="numberGrid" class="grid"></div>
 
+<div class="version">ver.1.0.0</div>
+
 <script>
-  // --------------- ピッ音（base64） ----------------
-  const beep = new Audio("data:audio/mp3;base64,SUQzAwAAAAAAF1RTU0UAAAAPAAADTGF2ZjU2LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADBwsOAkB0ABAIe3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e/8A");
+  // ---- ピッ音（base64） ----
+  const beep = new Audio("data:audio/mp3;base64,SUQzAwAAAAAAF1RTU0UAAAAPAAADTGF2ZjU2LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADBwsOAkB0ABAIe3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e/8A");
 
   function playBeep() {
     beep.currentTime = 0;
     beep.play().catch(e => {});
   }
-  // --------------------------------------------------
+  // -------------------------
 
   let MAX_NUM = 40;
   const submitted = new Set();
@@ -93,7 +101,8 @@
     const num = Number(decodedText);
 
     if (num >= 1 && num <= MAX_NUM) {
-      // ★ すでに提出済みでなければ音を鳴らす
+
+      // 新規スキャンのときだけビープ音
       if (!submitted.has(num)) {
         playBeep();
       }
@@ -104,7 +113,6 @@
     }
   }
 
-  // カメラ起動
   const qr = new Html5Qrcode("reader");
   qr.start(
     { facingMode: "environment" },

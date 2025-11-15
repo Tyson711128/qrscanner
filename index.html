@@ -8,12 +8,20 @@
   <style>
     body { font-family: sans-serif; margin: 0; padding: 10px; }
 
-    /* カメラ表示をコンパクトに */
+    /* カメラ表示枠を正方形ベースにして中央固定 */
     .scanner {
       width: 100%;
-      height: 220px;     /* ★ここで高さ調整 */
+      height: 240px;     /* ← カメラ高さ（調整してOK） */
       margin-bottom: 10px;
       overflow: hidden;
+      position: relative;
+    }
+
+    /* iPhoneのvideoズレ防止（最重要） */
+    .scanner video {
+      object-fit: cover !important;
+      width: 100% !important;
+      height: 100% !important;
     }
 
     .grid {
@@ -33,14 +41,7 @@
     }
     .submitted { background: #c8ffcc !important; }
 
-    .version {
-      margin-top: 20px;
-      text-align: center;
-      color: #777;
-      font-size: 14px;
-    }
-
-    /* 🔥フラッシュ演出 */
+    /* フラッシュ演出 */
     #flash {
       position: fixed;
       top: 0; left: 0;
@@ -48,8 +49,15 @@
       background: white;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s;
+      transition: opacity 0.15s;
       z-index: 999;
+    }
+
+    .version {
+      margin-top: 20px;
+      text-align: center;
+      color: #777;
+      font-size: 14px;
     }
   </style>
 </head>
@@ -78,10 +86,10 @@
 <h3>提出状況</h3>
 <div id="numberGrid" class="grid"></div>
 
-<div class="version">ver.1.3.0</div>
+<div class="version">ver.1.4.0</div>
 
 <script>
-  /* ★ 音（環境が許可する場合のみ鳴る） */
+  /* ---- 音（許可されている環境のみ鳴る） ---- */
   const beep = new Audio(
     "data:audio/mp3;base64,SUQzAwAAAAAAF1RTU0UAAAAPAAADTGF2ZjU2LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADBwsOAkB0ABAIe3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e/8A"
   );
@@ -91,17 +99,17 @@
     beep.play().catch(()=>{});
   }
 
-  /* ★フラッシュ */
+  /* ---- フラッシュ ---- */
   function flash() {
     const f = document.getElementById("flash");
     f.style.opacity = 0.8;
     setTimeout(()=> f.style.opacity = 0, 120);
   }
 
-  /* iOS対策：開始時に音アンロック＋その後カメラ起動 */
+  /* ---- 最重要：音アンロック → カメラ起動 ---- */
   async function startApp() {
     try {
-      await beep.play().catch(()=>{}); // 音アンロック
+      await beep.play().catch(()=>{}); // iOS用アンロック
       beep.pause();
       beep.currentTime = 0;
 
@@ -110,7 +118,11 @@
 
       qr.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: 180 },   // ★読み取り枠も縮小
+        {
+          fps: 10,
+          qrbox: { width: 180, height: 180 },  // ★ QRガイドの比率を固定（中央）
+          aspectRatio: 1.0                      // ★ iPhoneのズレ完全防止
+        },
         onScanSuccess
       );
     } catch (e) {
@@ -149,8 +161,8 @@
 
     if (num >= 1 && num <= MAX_NUM) {
       if (!submitted.has(num)) {
-        playBeep();   // 🔊可能な環境では音
-        flash();      // 💥フラッシュ（iOSでも確実）
+        flash();   // 💥 フラッシュ（iOSも100%）
+        playBeep(); // 🔊 音（使える環境のみ）
       }
 
       submitted.add(num);

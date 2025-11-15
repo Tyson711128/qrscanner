@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <body style="margin:0; padding:0; overflow:hidden;">
+    <div id="reader" style="width:100%; height:100vh;"></div>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <script>
+      const qr = new Html5Qrcode("reader");
+
+      qr.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 200 },
+        (decodedText) => {
+          parent.postMessage(
+            { type: "scan-result", text: decodedText },
+            "*"
+          );
+        }
+      ).catch(err => console.error(err));
+    </script>
+  </body>
+</html>

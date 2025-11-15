@@ -4,12 +4,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>提出物チェック</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
+
   <style>
     body { font-family: sans-serif; margin: 0; padding: 10px; }
     .scanner { width: 100%; margin-bottom: 20px; }
     .grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr); /* 5列グリッド */
+      grid-template-columns: repeat(5, 1fr);
       gap: 8px;
       margin-top: 10px;
     }
@@ -22,7 +23,7 @@
       font-weight: bold;
     }
     .submitted {
-      background: #c8ffcc !important; /* 緑色 */
+      background: #c8ffcc !important;
     }
     input {
       font-size: 18px;
@@ -52,20 +53,26 @@
 <div id="numberGrid" class="grid"></div>
 
 <script>
+  // --------------- ピッ音（base64） ----------------
+  const beep = new Audio("data:audio/mp3;base64,SUQzAwAAAAAAF1RTU0UAAAAPAAADTGF2ZjU2LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADBwsOAkB0ABAIe3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e/8A");
+
+  function playBeep() {
+    beep.currentTime = 0;
+    beep.play().catch(e => {});
+  }
+  // --------------------------------------------------
+
   let MAX_NUM = 40;
   const submitted = new Set();
 
-  // グリッド生成
   function renderGrid() {
     const grid = document.getElementById("numberGrid");
-    grid.innerHTML = ""; // 初期化
-
+    grid.innerHTML = "";
     for (let i = 1; i <= MAX_NUM; i++) {
       const div = document.createElement("div");
       div.className = "cell";
       div.id = "num_" + i;
       div.innerText = i;
-
       if (submitted.has(i)) {
         div.classList.add("submitted");
       }
@@ -84,13 +91,16 @@
 
   function onScanSuccess(decodedText) {
     const num = Number(decodedText);
-    if (num >= 1 && num <= MAX_NUM) {
-      submitted.add(num);
 
-      const cell = document.getElementById("num_" + num);
-      if (cell) {
-        cell.classList.add("submitted");
+    if (num >= 1 && num <= MAX_NUM) {
+      // ★ すでに提出済みでなければ音を鳴らす
+      if (!submitted.has(num)) {
+        playBeep();
       }
+
+      submitted.add(num);
+      const cell = document.getElementById("num_" + num);
+      if (cell) cell.classList.add("submitted");
     }
   }
 
@@ -102,7 +112,6 @@
     onScanSuccess
   );
 
-  // 初期描画
   renderGrid();
 </script>
 

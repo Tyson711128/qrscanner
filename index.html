@@ -7,7 +7,7 @@
 
   <style>
     body { font-family: sans-serif; margin: 0; padding: 10px; }
-    .scanner { width: 100%; margin-bottom: 20px; }
+    .scanner { width: 100%; margin-bottom: 20px; display:none; }
     .grid {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
@@ -22,19 +22,7 @@
       font-size: 18px;
       font-weight: bold;
     }
-    .submitted {
-      background: #c8ffcc !important;
-    }
-    input {
-      font-size: 18px;
-      padding: 8px;
-      width: 140px;
-    }
-    button {
-      font-size: 18px;
-      padding: 8px 12px;
-      margin-left: 5px;
-    }
+    .submitted { background: #c8ffcc !important; }
     .version {
       margin-top: 30px;
       text-align: center;
@@ -43,17 +31,20 @@
     }
   </style>
 </head>
-
 <body>
 
 <h2>提出物チェック</h2>
 
-<div style="margin-bottom: 10px;">
+<div>
   人数：
   <input type="number" id="maxNumInput" value="40" min="1">
   <button onclick="setMaxNum()">更新</button>
-  <button onclick="unlockSound()" style="background:#ffd;">音を有効にする（iOS）</button>
 </div>
+
+<!-- 追加：開始ボタン -->
+<button id="startBtn" onclick="startApp()" style="margin-top:10px; font-size:20px; padding:10px;">
+  ▶︎ 提出チェックを開始（iOSは必須）
+</button>
 
 <h3>読み取り画面</h3>
 <div id="reader" class="scanner"></div>
@@ -61,10 +52,10 @@
 <h3>提出状況</h3>
 <div id="numberGrid" class="grid"></div>
 
-<div class="version">ver.1.1.0</div>
+<div class="version">ver.1.2.0</div>
 
 <script>
-  // ---- ピッ音（iOS対応 base64） ----
+  // ---- ピッ音（base64） ----
   const beep = new Audio("data:audio/mp3;base64,SUQzAwAAAAAAF1RTU0UAAAAPAAADTGF2ZjU2LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADBwsOAkB0ABAIe3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e/8A");
 
   function playBeep() {
@@ -72,12 +63,33 @@
     beep.play().catch(e => {});
   }
 
-  function unlockSound() {
-    // iOSで音の再生権限を取得する（1回だけ必要）
-    beep.play().catch(()=>{});
-    alert("音が有効になりました！（iPhoneはマナーモード不可）");
+  // ---------- 最重要：音アンロック＋カメラ起動 ----------
+  async function startApp() {
+    try {
+      // 音アンロック（iOSはこれが必須）
+      await beep.play().catch(()=>{});
+      beep.pause();
+      beep.currentTime = 0;
+
+      // ボタン非表示
+      document.getElementById("startBtn").style.display = "none";
+
+      // カメラ表示
+      document.getElementById("reader").style.display = "block";
+
+      // カメラ起動
+      qr.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        onScanSuccess
+      );
+
+    } catch (e) {
+      alert("開始に失敗しました");
+      console.log(e);
+    }
   }
-  // -----------------------------------
+  // ------------------------------------------------------------
 
   let MAX_NUM = 40;
   const submitted = new Set();
@@ -85,16 +97,12 @@
   function renderGrid() {
     const grid = document.getElementById("numberGrid");
     grid.innerHTML = "";
-
     for (let i = 1; i <= MAX_NUM; i++) {
       const div = document.createElement("div");
       div.className = "cell";
       div.id = "num_" + i;
       div.innerText = i;
-
-      if (submitted.has(i)) {
-        div.classList.add("submitted");
-      }
+      if (submitted.has(i)) div.classList.add("submitted");
       grid.appendChild(div);
     }
   }
@@ -110,26 +118,15 @@
 
   function onScanSuccess(decodedText) {
     const num = Number(decodedText);
-
     if (num >= 1 && num <= MAX_NUM) {
-      if (!submitted.has(num)) {
-        playBeep();   // 新規提出 → 音
-      }
-
+      if (!submitted.has(num)) playBeep();
       submitted.add(num);
-
       const cell = document.getElementById("num_" + num);
       if (cell) cell.classList.add("submitted");
     }
   }
 
-  // カメラ起動
   const qr = new Html5Qrcode("reader");
-  qr.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: 250 },
-    onScanSuccess
-  );
 
   renderGrid();
 </script>

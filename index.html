@@ -25,7 +25,7 @@
       transform: translateY(-50%);
     }
 
-    /* 強フラッシュ */
+    /* 🔥 強フラッシュ：白100%＋目に見える時間に延長 */
     #flash {
       position: fixed;
       top: 0; left: 0;
@@ -33,7 +33,7 @@
       background: white;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.20s;
+      transition: opacity 0.20s; /* ← 0.12s → 長めに */
       z-index: 999;
     }
 
@@ -61,16 +61,10 @@
       font-size: 14px;
     }
 
-    #counter {
-      margin-top: 10px;
-      font-size: 18px;
-      font-weight: bold;
-      color: #333;
-    }
-
     button {
       padding: 10px 15px;
       font-size: 16px;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -88,17 +82,16 @@
   <button onclick="resetAll()" style="background:#fee;">リセット</button>
 </div>
 
-<div id="counter">提出済み：0 / 40</div>
-
 <h3>読み取り画面</h3>
 <div id="reader" class="scanner"></div>
 
 <h3>提出状況</h3>
 <div id="numberGrid" class="grid"></div>
 
-<div class="version">ver.1.8.0</div>
+<div class="version">ver.1.7.0</div>
 
 <script>
+  /* ---- 音（iOSは鳴らない、問題なし） ---- */
   const beep = new Audio(
   "data:audio/mp3;base64,SUQzAwAAAAAAF1RTU0UAAAAPAAADTGF2ZjU2LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADBwsOAkB0ABAIe3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e/8A"
   );
@@ -108,19 +101,15 @@
     beep.play().catch(()=>{});
   }
 
+  /* ---- 強フラッシュ ---- */
   function flash() {
     const f = document.getElementById("flash");
-    f.style.opacity = 1;
-    setTimeout(()=> f.style.opacity = 0, 250);
+    f.style.opacity = 1;        // ← 100%白に
+    setTimeout(()=> f.style.opacity = 0, 250); // ← 250ms見える
   }
 
   let MAX_NUM = 40;
   const submitted = new Set();
-
-  function updateCounter() {
-    document.getElementById("counter").innerText =
-      `提出済み：${submitted.size} / ${MAX_NUM}`;
-  }
 
   function renderGrid() {
     const grid = document.getElementById("numberGrid");
@@ -133,4 +122,48 @@
       if (submitted.has(i)) div.classList.add("submitted");
       grid.appendChild(div);
     }
-    updateCounter
+  }
+
+  /* ---- リセット機能 ---- */
+  function resetAll() {
+    submitted.clear();
+    renderGrid();
+    flash();   // リセットの確認として光らせる
+  }
+
+  function setMaxNum() {
+    const val = Number(document.getElementById("maxNumInput").value);
+    if (val > 0) {
+      MAX_NUM = val;
+      resetAll();
+    }
+  }
+
+  function onScanSuccess(text) {
+    const num = Number(text);
+    if (num >= 1 && num <= MAX_NUM) {
+      if (!submitted.has(num)) {
+        flash();      // ⚡ 強フラッシュ！
+        tryBeep();    // 🔊（Windowsのみ）
+      }
+      submitted.add(num);
+      document.getElementById("num_" + num)?.classList.add("submitted");
+    }
+  }
+
+  const qr = new Html5Qrcode("reader");
+
+  /* ---- 自動でカメラ起動 ---- */
+  window.onload = () => {
+    qr.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 200 },
+      onScanSuccess
+    );
+  };
+
+  renderGrid();
+</script>
+
+</body>
+</html>

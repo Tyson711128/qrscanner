@@ -1,198 +1,390 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>提出物チェッカー</title>
-
-<!-- html5-qrcode -->
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
+/* -------------------------
+   基本レイアウト
+------------------------- */
 body {
+  font-family: "Helvetica Neue", Arial, sans-serif;
   margin: 0;
-  padding: 0;
-  font-family: system-ui, sans-serif;
-  background: #f3f4f6;
+  padding: 18px;
+  background: #f4f5f7;
   color: #333;
 }
 
-/* カメラ領域 */
-#reader {
-  width: 100%;
-  max-width: 480px;
-  margin: 10px auto;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #000;
+h2 {
+  margin: 0 0 18px 0;
+  font-size: 26px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-/* html5-qrcode が出す四角・枠を完全に消す */
-#reader__scan_region,
-#reader__scan_region > div,
-#reader__scan_region canvas,
-#reader__dashboard_section_csr,
-.qr-shaded-region {
-    display: none !important;
-}
-
-/* UIカード */
+/* -------------------------
+   カード
+------------------------- */
 .card {
   background: #fff;
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 16px;
-  margin: 10px auto;
-  max-width: 480px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  margin-bottom: 18px;
+  border: 1px solid #e2e2e2;
 }
 
-h2 {
-  font-size: 20px;
-  margin: 0 0 12px;
-}
-
-/* グリッド */
-#grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-  margin-top: 10px;
-}
-
-.cell {
-  padding: 12px 0;
-  border-radius: 6px;
-  background: #e5e7eb;
-  text-align: center;
-  font-weight: bold;
-  transition: background 0.2s;
-}
-
-.cell.checked {
-  background: #10b981 !important;
-  color: #fff;
-}
-
-/* ボタン */
-button {
-  padding: 12px;
-  border-radius: 8px;
-  border: none;
-  width: 100%;
-  font-size: 16px;
-  margin-top: 8px;
-  cursor: pointer;
-}
-
-.btn-blue {
-  background: #3b82f6;
-  color: #fff;
-}
-
-.btn-gray {
-  background: #6b7280;
-  color: #fff;
-}
-
-/* フラッシュ */
+/* -------------------------
+   フラッシュ
+------------------------- */
 #flash {
   position: fixed;
   inset: 0;
   background: white;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s;
+  z-index: 999;
+  transition: opacity .25s;
+}
+
+/* -------------------------
+   ボタン
+------------------------- */
+button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 18px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-blue  { background: #2979ff; color: white; }
+.btn-gray  { background: #e6e7eb; color: #333; }
+.btn-red   { background: #ffd6d6; color: #b10000; }
+
+.icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* -------------------------
+   カメラ表示
+------------------------- */
+.scanner {
+  width: 100%;
+  height: 260px;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.scanner video {
+  width: 100% !important;
+  height: auto !important;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  filter: brightness(1.2) contrast(1.15);
+}
+
+/* -------------------------
+   html5-qrcode の四角を完全に消す
+------------------------- */
+#reader__scan_region,
+#reader__scan_region > div,
+#reader__scan_region canvas,
+.qr-shaded-region,
+#reader__dashboard_section_csr {
+  display: none !important;
+}
+
+/* -------------------------
+   提出番号グリッド
+------------------------- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.cell {
+  padding: 16px 0;
+  border-radius: 12px;
+  background: #eef1f5;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #455;
+  transition: background .25s;
+}
+
+.submitted {
+  background: #c8f7d2 !important;
+  color: #226d3a !important;
+}
+
+/* -------------------------
+   カウンタ
+------------------------- */
+.counter {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 12px 0;
 }
 </style>
 </head>
+
 <body>
 
 <div id="flash"></div>
 
-<div id="reader"></div>
+<!-- タイトル -->
+<h2>
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="#2979ff">
+    <path d="M9 3v2H5v14h14V5h-4V3h6v18H3V3h6z"/>
+  </svg>
+  提出物チェッカー
+</h2>
 
+<!-- 人数入力 -->
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+  <span style="font-size:18px; font-weight:600;">人数：</span>
+
+  <input
+    id="maxNumInput"
+    type="number"
+    value="40"
+    min="1"
+    style="
+      width:100px;
+      padding:12px;
+      font-size:20px;
+      border-radius:8px;
+      border:1px solid #ccc;
+    "
+  >
+
+  <button class="btn-blue" onclick="setMaxNum()" style="font-size:18px;">
+    <svg class="icon" viewBox="0 0 24 24" fill="white">
+      <path d="M12 5v14m-7-7h14" stroke="white" stroke-width="2" fill="none"/>
+    </svg>
+    更新
+  </button>
+</div>
+
+<!-- モード切替 / リセット -->
+<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+
+  <button class="btn-gray" onclick="switchMode()">
+    <svg class="icon" viewBox="0 0 24 24">
+      <path d="M4 4h7v7H4zm9 0h7v7h-7zm-9 9h7v7H4zm9 0h7v7h-7z"
+        fill="#333"/>
+    </svg>
+    モード（<span id="modeLabel">カメラ</span>）
+  </button>
+
+  <button class="btn-red" onclick="resetAll()">
+    <svg class="icon" viewBox="0 0 24 24" stroke="#b10000" stroke-width="2">
+      <path d="M6 6l12 12M6 18L18 6" fill="none"/>
+    </svg>
+    リセット
+  </button>
+
+</div>
+
+<!-- カウンタ -->
+<div class="counter">
+  提出済み：<span id="count">0</span> 件
+</div>
+
+<!-- カメラ or スキャナーモード -->
 <div class="card">
-  <h2>提出状況</h2>
-
-  <div>
-    人数:
-    <input id="maxNum" type="number" value="40" min="1" max="200"
-      style="width:80px; font-size:16px; padding:6px;">
-    <button class="btn-gray" onclick="updateGrid()" style="margin-top:4px;">人数を更新</button>
+  <div id="cameraArea">
+    <div id="reader" class="scanner"></div>
   </div>
 
-  <p style="margin-top:10px;">
-    読み取り件数: <span id="count">0</span>
-  </p>
+  <div id="scannerArea" style="display:none;">
+    <h3>スキャナーモード</h3>
+    <input id="scanInput" type="text"
+      style="width:100%; padding:14px; font-size:20px; border-radius:8px; border:1px solid #ccc;"
+      placeholder="バーコードを読み取る">
+  </div>
+</div>
 
-  <div id="grid"></div>
-
-  <button class="btn-blue" onclick="resetAll()">リセット</button>
+<!-- 提出状況 -->
+<div class="card">
+  <h3 style="margin-top:0;">提出状況</h3>
+  <div id="numberGrid" class="grid"></div>
 </div>
 
 <script>
-// ======= グリッド生成 ========
-let scanned = new Set();
+/* -------------------------
+   音
+------------------------- */
+const beep = new Audio(
+"data:audio/mp3;base64,SUQzAwAAAAAAF1RTU0UAAAAPAAADTGF2ZjU2LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADBwsOAkB0ABAIe3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e/8A"
+);
 
-function updateGrid() {
-  const max = Number(document.getElementById("maxNum").value);
-  const grid = document.getElementById("grid");
+function tryBeep(){
+  beep.currentTime = 0;
+  beep.play().catch(()=>{});
+}
+
+/* -------------------------
+   フラッシュ
+------------------------- */
+function flash(){
+  const f = document.getElementById("flash");
+  f.style.opacity = 1;
+  setTimeout(()=> f.style.opacity = 0, 250);
+}
+
+/* -------------------------
+   提出番号管理
+------------------------- */
+let MAX_NUM = 40;
+const submitted = new Set();
+let mode = "camera";
+
+function renderGrid(){
+  const grid = document.getElementById("numberGrid");
   grid.innerHTML = "";
-
-  for (let i = 1; i <= max; i++) {
+  for(let i=1;i<=MAX_NUM;i++){
     const div = document.createElement("div");
     div.className = "cell";
-    div.id = "cell-" + i;
+    div.id = "num_" + i;
     div.innerText = i;
+    if(submitted.has(i)) div.classList.add("submitted");
     grid.appendChild(div);
   }
+  document.getElementById("count").innerText = submitted.size;
 }
 
-updateGrid();
-
-// ======= フラッシュ演出 =======
-function doFlash() {
-  const f = document.getElementById("flash");
-  f.style.opacity = "1";
-  setTimeout(() => (f.style.opacity = "0"), 120);
+function extractNumber(t){
+  const m = t.match(/\d+/);
+  return m ? Number(m[0]) : NaN;
 }
 
-// ======= QR 読み取り =======
-function onScanSuccess(qr) {
-  // 例: ST-12 → 数字部分だけ抜く
-  const match = qr.match(/(\d+)/);
-  if (!match) return;
-  const num = Number(match[1]);
+/* -------------------------
+   カメラ
+------------------------- */
+const qr = new Html5Qrcode("reader");
 
-  const max = Number(document.getElementById("maxNum").value);
-  if (num < 1 || num > max) return;
+function startCamera(){
+  qr.start(
+    { facingMode:"environment" },
+    { fps:10, qrbox:250 },
+    text => scanProcess(text)
+  );
+}
 
-  if (!scanned.has(num)) {
-    scanned.add(num);
-    document.getElementById("cell-" + num).classList.add("checked");
-    document.getElementById("count").innerText = scanned.size;
-    doFlash();
+function stopCamera(){
+  try{ qr.stop(); }catch(e){}
+}
+
+/* -------------------------
+   モード切替
+------------------------- */
+function switchMode(){
+  if(mode==="camera"){
+    mode="scanner";
+    document.getElementById("modeLabel").innerText="スキャナー";
+    stopCamera();
+    cameraArea.style.display="none";
+    scannerArea.style.display="block";
+    scanInput.focus();
+  } else {
+    mode="camera";
+    document.getElementById("modeLabel").innerText="カメラ";
+    scannerArea.style.display="none";
+    cameraArea.style.display="block";
+    startCamera();
   }
 }
 
-// html5-qrcode 初期化
-const html5Qr = new Html5Qrcode("reader");
-Html5Qrcode.getCameras().then(cams => {
-  const camId = cams[0].id; // 内カメラを優先してもOK
-  html5Qr.start(
-    camId,
-    { fps: 10, qrbox: 250 },
-    onScanSuccess
-  );
+/* -------------------------
+   スキャナー入力
+------------------------- */
+scanInput.addEventListener("keydown", e=>{
+  if(e.key==="Enter"){
+    scanProcess(scanInput.value.trim());
+    scanInput.value="";
+  }
 });
 
-// ======= リセット =======
-function resetAll() {
-  scanned.clear();
-  document.getElementById("count").innerText = "0";
-  updateGrid();
+/* -------------------------
+   共通読取処理
+------------------------- */
+function scanProcess(text){
+  const num = extractNumber(text);
+  if(isNaN(num) || num<1 || num>MAX_NUM) return;
+
+  if(!submitted.has(num)){
+    flash();
+    tryBeep();
+  }
+
+  submitted.add(num);
+  document.getElementById("num_"+num)?.classList.add("submitted");
+  document.getElementById("count").innerText = submitted.size;
 }
+
+/* -------------------------
+   その他
+------------------------- */
+function resetAll(){
+  submitted.clear();
+  renderGrid();
+  flash();
+}
+
+function setMaxNum(){
+  MAX_NUM = Number(document.getElementById("maxNumInput").value);
+  resetAll();
+}
+
+/* 初期化 */
+renderGrid();
+startCamera();
 </script>
+
+<!-- フッター説明 -->
+<div style="
+  margin-top:40px;
+  padding:20px;
+  background:#f0f2f5;
+  border-radius:12px;
+  font-size:14px;
+  line-height:1.6;
+  color:#444;
+">
+  <strong>このページについて</strong><br><br>
+
+  この「提出物チェッカー」は、教育現場の負担を少しでも減らしたいという思いから、
+  個人で開発した無料ツールです。<br><br>
+
+  インストール不要で、スマホ・タブレット・PCのどれからでも利用できます。<br>
+  そのため、学校によってはインストール申請などの手続きなしで使える可能性があります。<br><br>
+
+  広告表示や料金は一切なく、利用者の名前を入力したりデータを保存する機能もありません。<br>
+  そのため、提出状況のチェックにおいて個人情報が残る心配もありません。<br><br>
+
+  バーコードリーダー（USB/Bluetooth）でも読み取りができ、
+  さらに効率的に提出物を確認することが可能です。<br><br>
+
+  同じようなサービスはいくつかありますが、
+  「インストール不要」「極めてシンプル」「個人情報を扱わない」という点を大切にして作っています。<br><br>
+
+  時間外労働の削減や日々の業務効率化の一助となれば幸いです。
+</div>
 
 </body>
 </html>

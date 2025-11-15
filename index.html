@@ -8,17 +8,15 @@
   <style>
     body { font-family: sans-serif; margin: 0; padding: 10px; }
 
-    /* カメラ表示（ガイドなし・ズレ防止） */
     .scanner {
       width: 100%;
-      height: 240px;      /* ← カメラ高さ（調整可） */
+      height: 240px;
       margin-bottom: 10px;
       position: relative;
       background: #000;
       overflow: hidden;
     }
 
-    /* videoを縦方向で中央寄せ、クロップしない */
     .scanner video {
       width: 100% !important;
       height: auto !important;
@@ -27,7 +25,7 @@
       transform: translateY(-50%);
     }
 
-    /* フラッシュ（iOSでも100%表示） */
+    /* 🔥 強フラッシュ：白100%＋目に見える時間に延長 */
     #flash {
       position: fixed;
       top: 0; left: 0;
@@ -35,7 +33,7 @@
       background: white;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.12s;
+      transition: opacity 0.20s; /* ← 0.12s → 長めに */
       z-index: 999;
     }
 
@@ -62,6 +60,12 @@
       color: #777;
       font-size: 14px;
     }
+
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      margin-top: 10px;
+    }
   </style>
 </head>
 
@@ -75,6 +79,7 @@
   人数：
   <input type="number" id="maxNumInput" value="40" min="1">
   <button onclick="setMaxNum()">更新</button>
+  <button onclick="resetAll()" style="background:#fee;">リセット</button>
 </div>
 
 <h3>読み取り画面</h3>
@@ -83,7 +88,7 @@
 <h3>提出状況</h3>
 <div id="numberGrid" class="grid"></div>
 
-<div class="version">ver.1.6.0</div>
+<div class="version">ver.1.7.0</div>
 
 <script>
   /* ---- 音（iOSは鳴らない、問題なし） ---- */
@@ -96,11 +101,11 @@
     beep.play().catch(()=>{});
   }
 
-  /* ---- フラッシュ ---- */
+  /* ---- 強フラッシュ ---- */
   function flash() {
     const f = document.getElementById("flash");
-    f.style.opacity = 0.8;
-    setTimeout(()=> f.style.opacity = 0, 100);
+    f.style.opacity = 1;        // ← 100%白に
+    setTimeout(()=> f.style.opacity = 0, 250); // ← 250ms見える
   }
 
   let MAX_NUM = 40;
@@ -119,12 +124,18 @@
     }
   }
 
+  /* ---- リセット機能 ---- */
+  function resetAll() {
+    submitted.clear();
+    renderGrid();
+    flash();   // リセットの確認として光らせる
+  }
+
   function setMaxNum() {
     const val = Number(document.getElementById("maxNumInput").value);
     if (val > 0) {
       MAX_NUM = val;
-      submitted.clear();
-      renderGrid();
+      resetAll();
     }
   }
 
@@ -132,26 +143,21 @@
     const num = Number(text);
     if (num >= 1 && num <= MAX_NUM) {
       if (!submitted.has(num)) {
-        flash();      // ⚡フラッシュは必ず動く
-        tryBeep();    // 🔊音は可能なら鳴る
+        flash();      // ⚡ 強フラッシュ！
+        tryBeep();    // 🔊（Windowsのみ）
       }
-
       submitted.add(num);
-      const c = document.getElementById("num_" + num);
-      if (c) c.classList.add("submitted");
+      document.getElementById("num_" + num)?.classList.add("submitted");
     }
   }
 
   const qr = new Html5Qrcode("reader");
 
-  /* ---- ページ読み込み時に自動でカメラ起動 ---- */
+  /* ---- 自動でカメラ起動 ---- */
   window.onload = () => {
     qr.start(
       { facingMode: "environment" },
-      {
-        fps: 10,
-        qrbox: 200,             // ← 四角は表示しないが内部範囲はこれ
-      },
+      { fps: 10, qrbox: 200 },
       onScanSuccess
     );
   };

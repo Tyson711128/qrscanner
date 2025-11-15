@@ -6,9 +6,9 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
-/* =====================
-      基本スタイル
-===================== */
+/* -------------------------
+   基本レイアウト
+------------------------- */
 body {
   font-family: "Helvetica Neue", Arial, sans-serif;
   margin: 0;
@@ -26,14 +26,9 @@ h2 {
   gap: 8px;
 }
 
-.app-icon {
-  width: 28px;
-  height: 28px;
-}
-
-/* =====================
-      カード
-===================== */
+/* -------------------------
+   カード
+------------------------- */
 .card {
   background: #fff;
   border-radius: 14px;
@@ -42,51 +37,46 @@ h2 {
   border: 1px solid #e2e2e2;
 }
 
-/* =====================
-      操作ボタン
-===================== */
-.controls {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
+/* -------------------------
+   フラッシュ
+------------------------- */
+#flash {
+  position: fixed;
+  inset: 0;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 999;
+  transition: opacity .25s;
 }
 
+/* -------------------------
+   ボタン
+------------------------- */
 button {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 15px;
+  padding: 12px 18px;
+  font-size: 16px;
   font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
 }
 
-.btn-main {
-  background: #2979ff;
-  color: #fff;
-}
-
-.btn-gray {
-  background: #e6e7eb;
-  color: #333;
-}
-
-.btn-danger {
-  background: #ffd6d6;
-  color: #b10000;
-}
+.btn-blue  { background: #2979ff; color: white; }
+.btn-gray  { background: #e6e7eb; color: #333; }
+.btn-red   { background: #ffd6d6; color: #b10000; }
 
 .icon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 
-/* =====================
-      カメラエリア
-===================== */
+/* -------------------------
+   カメラ表示
+------------------------- */
 .scanner {
   width: 100%;
   height: 260px;
@@ -102,26 +92,12 @@ button {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  filter: brightness(1.22) contrast(1.15);
+  filter: brightness(1.2) contrast(1.15);
 }
 
-/* =====================
-      フラッシュ
-===================== */
-#flash {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: white;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .25s;
-  z-index: 999;
-}
-
-/* =====================
-      グリッド
-===================== */
+/* -------------------------
+   提出番号グリッド
+------------------------- */
 .grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -135,142 +111,204 @@ button {
   text-align: center;
   font-size: 18px;
   font-weight: 700;
-  color: #445;
+  color: #455;
   transition: background .25s;
 }
 
 .submitted {
   background: #c8f7d2 !important;
-  color: #236d3a !important;
+  color: #226d3a !important;
 }
 
-/* =====================
-      カウンタ
-===================== */
+/* -------------------------
+   カウンタ
+------------------------- */
 .counter {
   font-size: 18px;
   font-weight: 700;
-  margin-bottom: 10px;
+  margin: 12px 0;
 }
+
 </style>
 </head>
+
 <body>
 
 <div id="flash"></div>
 
-<!-- =====================
-        タイトル
-===================== -->
+<!-- タイトル ＋ アイコン -->
 <h2>
-  <img src="data:image/svg+xml;utf8,
-  <svg fill='%232979ff' width='28' height='28' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
-    <path d='M9 3v2H5v14h14V5h-4V3h6v18H3V3h6z'/>
-  </svg>" class="app-icon" />
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="#2979ff">
+    <path d="M9 3v2H5v14h14V5h-4V3h6v18H3V3h6z"/>
+  </svg>
   提出物チェッカー
 </h2>
 
-<!-- =====================
-        ボタン群
-===================== -->
-<div class="controls">
-  <button class="btn-main" onclick="switchMode()">
+<!-- -------------------------
+     人数入力（大きめ）＋更新ボタン
+------------------------- -->
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+
+  <span style="font-size:18px; font-weight:600;">人数：</span>
+
+  <input
+    id="maxNumInput"
+    type="number"
+    value="40"
+    min="1"
+    style="
+      width:100px;
+      padding:12px;
+      font-size:20px;
+      border-radius:8px;
+      border:1px solid #ccc;
+    "
+  >
+
+  <button class="btn-blue" onclick="setMaxNum()" style="font-size:18px;">
     <svg class="icon" viewBox="0 0 24 24" fill="white">
-      <path d="M12 5v14m-7-7h14"/>
+      <path d="M12 5v14m-7-7h14" stroke="white" stroke-width="2" fill="none"/>
     </svg>
-    モード切替（<span id="modeLabel">カメラ</span>）
+    更新
   </button>
 
-  <button class="btn-gray" onclick="setMaxNum()">
-    <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg>
-    人数更新
+</div>
+
+<!-- -------------------------
+     モード切替 / リセット
+------------------------- -->
+<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+
+  <button class="btn-gray" onclick="switchMode()">
+    <svg class="icon" viewBox="0 0 24 24">
+      <path d="M4 4h7v7H4zm9 0h7v7h-7zm-9 9h7v7H4zm9 0h7v7h-7z"
+        fill="#333"/>
+    </svg>
+    モード（<span id="modeLabel">カメラ</span>）
   </button>
 
-  <button class="btn-danger" onclick="resetAll()">
-    <svg class="icon" viewBox="0 0 24 24" fill="#b10000">
-      <path d="M6 6l12 12M6 18L18 6"/>
+  <button class="btn-red" onclick="resetAll()">
+    <svg class="icon" viewBox="0 0 24 24" stroke="#b10000" stroke-width="2">
+      <path d="M6 6l12 12M6 18L18 6" fill="none"/>
     </svg>
     リセット
   </button>
+
 </div>
 
-人数：<input type="number" id="maxNumInput" value="40" min="1" style="width:80px;">
+<!-- カウンタ -->
+<div class="counter">
+  提出済み：<span id="count">0</span> 件
+</div>
 
-<div class="counter">提出済み：<span id="count">0</span> 件</div>
-
-<!-- =====================
-        カメラ / スキャナー
-===================== -->
+<!-- -------------------------
+     カメラ or スキャナー
+------------------------- -->
 <div class="card">
+
+  <!-- カメラエリア -->
   <div id="cameraArea">
     <div id="reader" class="scanner"></div>
   </div>
 
+  <!-- スキャナーエリア -->
   <div id="scannerArea" style="display:none;">
     <h3>スキャナーモード</h3>
     <input id="scanInput" type="text"
-      placeholder="スキャナーで読み取る"
-      style="width:100%; padding:14px; font-size:20px; border-radius:8px; border:1px solid #ccc;">
+      style="width:100%; padding:14px; font-size:20px; border-radius:8px; border:1px solid #ccc;"
+      placeholder="バーコードを読み取る">
   </div>
+
 </div>
 
-<!-- =====================
-        提出状況
-===================== -->
+<!-- -------------------------
+     提出状況
+------------------------- -->
 <div class="card">
   <h3 style="margin-top:0;">提出状況</h3>
   <div id="numberGrid" class="grid"></div>
 </div>
 
 <script>
-/* 音 */
-const beep = new Audio("data:audio/mp3;base64,SUQz...（略）");
+/* -------------------------
+   音
+------------------------- */
+const beep = new Audio(
+"data:audio/mp3;base64,SUQzAwAAAAAAF1RTU0UAAAAPAAADTGF2ZjU2LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADBwsOAkB0ABAIe3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e/8A"
+);
 
-/* フラッシュ */
-function flash(){ const f=document.getElementById("flash"); f.style.opacity=1; setTimeout(()=>f.style.opacity=0,200); }
+function tryBeep(){
+  beep.currentTime = 0;
+  beep.play().catch(()=>{});
+}
 
-/* 提出管理 */
-let MAX_NUM=40;
-const submitted=new Set();
-let mode="camera";
+/* -------------------------
+   フラッシュ
+------------------------- */
+function flash(){
+  const f = document.getElementById("flash");
+  f.style.opacity = 1;
+  setTimeout(()=> f.style.opacity = 0, 250);
+}
 
-/* グリッド */
+/* -------------------------
+   提出番号管理
+------------------------- */
+let MAX_NUM = 40;
+const submitted = new Set();
+let mode = "camera";
+
 function renderGrid(){
-  const grid=document.getElementById("numberGrid");
-  grid.innerHTML="";
+  const grid = document.getElementById("numberGrid");
+  grid.innerHTML = "";
   for(let i=1;i<=MAX_NUM;i++){
-    const div=document.createElement("div");
-    div.className="cell";
-    div.id="num_"+i;
-    div.innerText=i;
+    const div = document.createElement("div");
+    div.className = "cell";
+    div.id = "num_" + i;
+    div.innerText = i;
     if(submitted.has(i)) div.classList.add("submitted");
     grid.appendChild(div);
   }
-  document.getElementById("count").innerText=submitted.size;
+  document.getElementById("count").innerText = submitted.size;
 }
 
-function extractNumber(str){
-  const m=str.match(/\d+/);
-  return m?Number(m[0]):NaN;
+function extractNumber(t){
+  const m = t.match(/\d+/);
+  return m ? Number(m[0]) : NaN;
 }
 
-/* カメラ */
-const qr=new Html5Qrcode("reader");
+/* -------------------------
+   カメラ
+------------------------- */
+const qr = new Html5Qrcode("reader");
 
 function startCamera(){
-  qr.start({facingMode:"environment"}, {fps:10, qrbox:250}, text=>scanProcess(text));
+  qr.start(
+    { facingMode:"environment" },
+    { fps:10, qrbox:250 },
+    text => scanProcess(text)
+  );
 }
-function stopCamera(){ try{ qr.stop(); }catch(e){} }
 
-/* モード切替 */
+function stopCamera(){
+  try{ qr.stop(); }catch(e){}
+}
+
+/* -------------------------
+   モード切替
+------------------------- */
 function switchMode(){
   if(mode==="camera"){
+    // → スキャナー
     mode="scanner";
     document.getElementById("modeLabel").innerText="スキャナー";
     stopCamera();
     cameraArea.style.display="none";
     scannerArea.style.display="block";
     scanInput.focus();
-  }else{
+
+  } else {
+    // → カメラ
     mode="camera";
     document.getElementById("modeLabel").innerText="カメラ";
     scannerArea.style.display="none";
@@ -279,28 +317,48 @@ function switchMode(){
   }
 }
 
-/* スキャナー入力 */
-scanInput.addEventListener("keydown",e=>{
-  if(e.key==="Enter"){ scanProcess(scanInput.value.trim()); scanInput.value=""; }
+/* -------------------------
+   スキャナー入力
+------------------------- */
+scanInput.addEventListener("keydown", e=>{
+  if(e.key==="Enter"){
+    scanProcess(scanInput.value.trim());
+    scanInput.value="";
+  }
 });
 
-/* 共通処理 */
+/* -------------------------
+   共通読取処理
+------------------------- */
 function scanProcess(text){
-  const num=extractNumber(text);
-  if(isNaN(num)||num<1||num>MAX_NUM) return;
+  const num = extractNumber(text);
+  if(isNaN(num) || num<1 || num>MAX_NUM) return;
 
-  if(!submitted.has(num)){ flash(); beep.play().catch(()=>{}); }
+  if(!submitted.has(num)){
+    flash();
+    tryBeep();
+  }
 
   submitted.add(num);
   document.getElementById("num_"+num)?.classList.add("submitted");
-  document.getElementById("count").innerText=submitted.size;
+  document.getElementById("count").innerText = submitted.size;
 }
 
-/* その他 */
-function resetAll(){ submitted.clear(); renderGrid(); flash(); }
-function setMaxNum(){ MAX_NUM=Number(maxNumInput.value); resetAll(); }
+/* -------------------------
+   その他
+------------------------- */
+function resetAll(){
+  submitted.clear();
+  renderGrid();
+  flash();
+}
 
-/* 初期 */
+function setMaxNum(){
+  MAX_NUM = Number(document.getElementById("maxNumInput").value);
+  resetAll();
+}
+
+/* 初期化 */
 renderGrid();
 startCamera();
 </script>

@@ -25,7 +25,7 @@
       transform: translateY(-50%);
     }
 
-    /* 🔥 強フラッシュ：白100%＋目に見える時間に延長 */
+    /* 強フラッシュ */
     #flash {
       position: fixed;
       top: 0; left: 0;
@@ -33,7 +33,7 @@
       background: white;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.20s; /* ← 0.12s → 長めに */
+      transition: opacity 0.20s;
       z-index: 999;
     }
 
@@ -61,6 +61,12 @@
       font-size: 14px;
     }
 
+    .counter {
+      font-size: 18px;
+      margin-top: 5px;
+      font-weight: bold;
+    }
+
     button {
       padding: 10px 15px;
       font-size: 16px;
@@ -75,11 +81,15 @@
 
 <h2>提出物チェック</h2>
 
-<div>
+<div style="margin-bottom:5px;">
   人数：
   <input type="number" id="maxNumInput" value="40" min="1">
   <button onclick="setMaxNum()">更新</button>
   <button onclick="resetAll()" style="background:#fee;">リセット</button>
+</div>
+
+<div class="counter">
+  提出済み：<span id="count">0</span> 件
 </div>
 
 <h3>読み取り画面</h3>
@@ -88,10 +98,9 @@
 <h3>提出状況</h3>
 <div id="numberGrid" class="grid"></div>
 
-<div class="version">ver.1.7.0</div>
+<div class="version">ver.1.8.0</div>
 
 <script>
-  /* ---- 音（iOSは鳴らない、問題なし） ---- */
   const beep = new Audio(
   "data:audio/mp3;base64,SUQzAwAAAAAAF1RTU0UAAAAPAAADTGF2ZjU2LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADBwsOAkB0ABAIe3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e/8A"
   );
@@ -101,11 +110,10 @@
     beep.play().catch(()=>{});
   }
 
-  /* ---- 強フラッシュ ---- */
   function flash() {
     const f = document.getElementById("flash");
-    f.style.opacity = 1;        // ← 100%白に
-    setTimeout(()=> f.style.opacity = 0, 250); // ← 250ms見える
+    f.style.opacity = 1;
+    setTimeout(()=> f.style.opacity = 0, 250);
   }
 
   let MAX_NUM = 40;
@@ -122,13 +130,19 @@
       if (submitted.has(i)) div.classList.add("submitted");
       grid.appendChild(div);
     }
+    document.getElementById("count").innerText = submitted.size;
   }
 
-  /* ---- リセット機能 ---- */
+  /* ST-1 / ST-2 / AA-15 など → 数字部分だけ取り出す */
+  function extractNumber(text) {
+    const m = text.match(/\d+/);
+    return m ? Number(m[0]) : NaN;
+  }
+
   function resetAll() {
     submitted.clear();
     renderGrid();
-    flash();   // リセットの確認として光らせる
+    flash();
   }
 
   function setMaxNum() {
@@ -140,20 +154,27 @@
   }
 
   function onScanSuccess(text) {
-    const num = Number(text);
-    if (num >= 1 && num <= MAX_NUM) {
-      if (!submitted.has(num)) {
-        flash();      // ⚡ 強フラッシュ！
-        tryBeep();    // 🔊（Windowsのみ）
-      }
-      submitted.add(num);
-      document.getElementById("num_" + num)?.classList.add("submitted");
+    const num = extractNumber(text);
+    if (isNaN(num)) return;            // 数字がなければ無視
+    if (num < 1 || num > MAX_NUM) return;
+
+    const isNew = !submitted.has(num);
+
+    if (isNew) {
+      flash();
+      tryBeep();
     }
+
+    submitted.add(num);
+
+    document.getElementById("num_" + num)?.classList.add("submitted");
+
+    // カウンタ更新
+    document.getElementById("count").innerText = submitted.size;
   }
 
   const qr = new Html5Qrcode("reader");
 
-  /* ---- 自動でカメラ起動 ---- */
   window.onload = () => {
     qr.start(
       { facingMode: "environment" },
